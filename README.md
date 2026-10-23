@@ -2,6 +2,12 @@
 
 We intend to use an existing Multiple-Object Tracking like OC-Sort or ByteTrack that utilizes Kalman filters for predictions and try to improve on that design using collective motion models. We expect that this could boost the original tracker's performance by a few percentage points on animal datasets like 3D-ZeF or SweetFish.
 
+### Starting point 
+- download the datasets
+- implement one of the proposed trackers
+- create an evaluation environment
+
+
 ### Milestones
 #### 1st milestone
 - data preparation
