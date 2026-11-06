@@ -1,0 +1,17 @@
+# OC-SORT on SweetFish val_half with cached YOLO detections.
+# Pass the id printed by export_detections.py:
+#   python scripts/run_tracking.py configs/experiments/ocsort_sweetfish_yolo.yaml detections.det_id=<det_id>
+dataset: sweetfish
+split: val_half
+detections:
+  source: cached
+  det_id: null
+tracker:
+  name: ocsort
+  config: default
+  motion: kf_cv_xysr
+  overrides: {}
+runner:
+  skip_empty_frames: false
+  interpolation: null
+evaluate: true

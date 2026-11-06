@@ -1,0 +1,26 @@
+# YOLO11-s zebrafish detector for 3D-ZeF (both camera views in one model),
+# trained on the official train split and validated on the val split.
+name: yolo11s_zef3d
+framework: ultralytics
+model: yolo11s.pt            # downloaded to weights/pretrained/ on first use
+dataset: zef3d
+data:
+  train_split: train
+  val_split: val
+  frame_stride: 3
+  class_name: zebrafish
+train:                       # passed straight to ultralytics YOLO.train()
+  epochs: 60
+  imgsz: 1280                # 2704x1520 views
+  batch: 8
+  workers: 8
+  patience: 20
+  seed: 0
+  deterministic: true
+  plots: true
+inference:                   # used by export_detections.py
+  imgsz: 1280
+  conf: 0.05
+  iou: 0.7
+  quantize: 16               # FP16 inference
+  batch: 8

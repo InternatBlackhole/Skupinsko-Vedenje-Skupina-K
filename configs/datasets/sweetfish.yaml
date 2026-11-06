@@ -1,0 +1,26 @@
+name: sweetfish
+reader: sweetfish
+root: SweetFish          # relative to CMOT_DATA_ROOT (default ~/Desktop/Data)
+swap_xy: true            # train_gt_mot.txt has x / y transposed (see datasets/sweetfish.py)
+# Only the train video (10000 frames, 30 FPS, 2456x2058, 10 fish) has GT.
+# train_half / val_half split it in time, MOT17-style, for tuning without touching test.
+splits:
+  train: [train]
+  train_half:
+    - {seq: train, frames: [1, 5000]}
+  val_half:
+    - {seq: train, frames: [5001, 10000]}
+  # Detector training uses train_half only, with its last 500 frames held out
+  # for checkpoint selection, so tracking on val_half sees unseen frames.
+  det_train:
+    - {seq: train, frames: [1, 4500]}
+  det_val:
+    - {seq: train, frames: [4501, 5000]}
+lengths:                 # frame counts of unannotated videos (ffprobe)
+  development: 2259
+  test: 10400
+evaluation:
+  do_preproc: false
+output_filter:           # the official MOT17 pedestrian filters are disabled for fish
+  min_box_area: 0
+  max_aspect_ratio: null

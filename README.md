@@ -1,6 +1,32 @@
 ### Introducing collective motion models to MOT
 
-We intend to use an existing Multiple-Object Tracking like OC-Sort or ByteTrack that utilizes Kalman filters for predictions and try to improve on that design using collective motion models. We expect that this could boost the original tracker's performance by a few percentage points on animal datasets like 3D-ZeF or SweetFish.
+We intend to use an existing Multiple-Object Tracking like OC-Sort (or ByteTrack) that utilizes Kalman filters for predictions and try to improve on that design using collective motion models. We expect that this could boost the original tracker's performance by a few percentage points on animal datasets like 3D-ZeF or SweetFish.
+
+### Code
+
+#### Setup
+```bash
+conda env create -f environment.yml      # creates the "mot" env and installs this package (editable)
+conda activate mot
+```
+Datasets are read from `~/Desktop/Data/<dataset>` (override with `CMOT_DATA_ROOT`).
+
+#### Layout
+- `src/cmot/trackers/<tracker>/` - one self-contained folder per tracker; `ocsort/motion/` holds OC-SORT's motion models (the focus of the experiments)
+- `src/cmot/datasets/` - SweetFish, 3D-ZeF (per camera view), AnimalTrack readers
+- `src/cmot/detection/` - YOLO training / export, cached detections, or `gt_oracle` (noisy GT boxes)
+- `src/cmot/evaluation/` - TrackEval (HOTA / MOTA / IDF1)
+- `configs/` - datasets, detectors, trackers, motion models, experiments
+- `weights/` (gitignored) - `<model>/<dataset>/<run_id>/weights/best.pt`
+- `outputs/` (gitignored) - cached detections, `runs/<dataset>/<split>/<tracker>/<motion>/<run_id>/` plus `index.csv`; nothing is ever overwritten
+
+#### Run
+```bash
+python scripts/train_detector.py configs/detectors/yolo11s_sweetfish.yaml
+python scripts/export_detections.py weights/yolo11s/sweetfish/<run_id> --splits val_half
+python scripts/run_tracking.py configs/experiments/ocsort_sweetfish_yolo.yaml detections.det_id=<det_id>
+python scripts/run_tracking.py configs/experiments/ocsort_sweetfish_oracle.yaml tracker.overrides.inertia=0.1
+```
 
 ### Starting point 
 - download the datasets
@@ -18,6 +44,7 @@ We intend to use an existing Multiple-Object Tracking like OC-Sort or ByteTrack 
 
 #### 3rd milestone
 - additional collective motion experiments
+- adding newer baselines to compare against current SOTA (SAM3.1 & DAM4SAM for example)
 - aggregating the results and writting the final report
 
 

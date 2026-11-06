@@ -1,0 +1,22 @@
+# Generated data, never committed
+outputs/
+weights/
+
+# Local-only verification: official OC-SORT reference, its download script, tests
+third_party/
+scripts/fetch_reference.sh
+tests/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+.ipynb_checkpoints/

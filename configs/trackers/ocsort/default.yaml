@@ -1,0 +1,14 @@
+# OC-SORT, defaults from the paper / official repository (utils/args.py).
+det_thresh: 0.6        # --track_thresh
+low_thresh: 0.1        # lower bound for BYTE's low-confidence detections
+max_age: 30            # --track_buffer
+min_hits: 3
+iou_threshold: 0.3
+delta_t: 3             # --deltat
+inertia: 0.2           # OCM weight
+asso_func: iou         # BYTE / OCR similarity: iou | giou | diou | ciou | ct_dist
+use_byte: false
+use_oru: true
+oru_trajectory: linear
+output_box: observation   # observation (official) | state (motion-model estimate)
+motion: kf_cv_xysr        # configs/trackers/ocsort/motion/<name>.yaml
