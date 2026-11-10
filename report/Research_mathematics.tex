@@ -1,0 +1,201 @@
+\documentclass[9pt,twoside]{pnas-new}
+
+\articletype{COLLECTIVE BEHAVIOUR}
+
+\templatetype{pnasmathematics} % one-column; use {pnasresearcharticle} for two columns
+
+\begin{document}
+
+\title{Collective Motion Models in Multiple-Object Tracking}
+
+\author[a,1]{Jure Pahor}
+\author[a,1]{Timotej Kroflič}
+\author[a,1]{Jure Dežman}
+
+\affil[a]{Faculty of Computer and Information Science, University of Ljubljana, Večna pot 113, SI-1000 Ljubljana, Slovenia}
+
+\equalauthors{\textsuperscript{1}J.P., T.K. and J.D. contributed equally to this work.}
+
+\leadauthor{Pahor}
+
+\significancestatement{Tracking many animals at once in video is central to studying collective behaviour, yet automatic trackers often swap identities when similar-looking individuals pass close to or behind one another. Most widely used trackers predict the next position of each animal as if it moved alone, in a straight line. Animals in groups, however, coordinate their motion with their neighbours. We bring a classic model of collective motion, in which individuals are attracted to, avoid and align with nearby group members, into the prediction step of a standard tracker. When a fish is briefly hidden, its predicted path follows the group rather than a straight line.}
+
+\authorcontributions{Author contributions: J.P., T.K. and J.D. designed research, performed research, analyzed data and wrote the paper.}
+
+\keywords{Multiple-Object Tracking $|$ Collective Motion $|$ Motion Models}
+
+\begin{abstract}
+NOTE: This section will be added at a later milestone. 
+NOTE: This section will be added at a later milestone. 
+NOTE: This section will be added at a later milestone. 
+NOTE: This section will be added at a later milestone. 
+NOTE: This section will be added at a later milestone. 
+NOTE: This section will be added at a later milestone. 
+NOTE: This section will be added at a later milestone. 
+NOTE: This section will be added at a later milestone. 
+NOTE: This section will be added at a later milestone. 
+
+\end{abstract}
+
+\dates{This manuscript was compiled on \today}
+
+\maketitle
+\thispagestyle{firststyle}
+\ifthenelse{\boolean{shortarticle}}{\ifthenelse{\boolean{singlecolumn}}{\abscontentformatted}{\abscontent}}{}
+
+\firstpage{6}
+
+\section*{Introduction}
+% what is MOT and other approaches in the field
+\emph{Multiple-object tracking (MOT)} aims to localise all objects of interest in a video and link them over time into trajectories with consistent identities \cite{mot_survey}. The dominanti  approach is \emph{tracking-by-detection}, where a detector finds objects in each frame and these detections are then associated across frames \cite{mot_survey,motchallenge}. Such trackers can operate \emph{offline}, using the whole video at once \cite{neuralsolver}, or \emph{online}, using only past and current frames \cite{sort,deepsort,bytetrack,ocsort}. A different line of work tracks objects through segmentation, most notably with the Segment Anything Model (SAM) family \cite{sam2,sam3}, propagating object masks through the video instead of matching boxes \cite{dam4sam,ugo}.
+
+% our baseline method ocsort and its counterparts (sort approaches)
+Many online trackers build on \emph{Simple Online and Realtime Tracking (SORT)} \cite{sort}, which predicts each object's next bounding box with a Kalman filter \cite{kalman} and matches these predictions to new detections by their overlap (IoU). Despite its simplicity, SORT and its successors \cite{deepsort,bytetrack,ocsort,oasort} remain competitive. They all retain the same constant-velocity motion model, which assumes that each object keeps moving in the direction and at the speed estimated from its previous frames. This ignores both changes in motion, such as accelerations and turns, and the influence of nearby objects, since every object is predicted independently of all others \cite{sort}.
+
+% motion models READ before submission and check how true it is
+Other motion models, such as constant-acceleration or turn-rate models, have also been integrated into SORT-style trackers \cite{fish_ekf,arcsort}, yet they too predict every object in isolation. In animal groups, however, individuals do not move independently. Models of collective behaviour describe each individual as a separate entity that steers according to simple rules relative to its neighbours: it moves away from those that are too close (separation), matches the heading of nearby ones (alignment), and moves towards those further away (cohesion) \cite{aoki,reynolds,couzin}. Fitting such models to recorded fish trajectories has shown that real fish indeed interact through attraction, repulsion and alignment with a limited number of neighbours \cite{katz,heras}. Interaction models of this kind have been used to improve pedestrian tracking \cite{pedestrians}, but to our knowledge collective motion models have not been used as the motion model of SORT-style trackers.
+
+% contribution FACT CHECK AFTER THE FINAL IMPLEMENTATION
+In this work, we replace the independent constant-velocity prediction with a collective motion model. We build on OC-SORT \cite{ocsort}, a SORT \cite{sort} successor designed to be robust to occlusion and non-linear motion, and leave its association steps unchanged. Following the boids model \cite{reynolds}, each track perceives the other tracks within a limited radius and field of view, and their positions and velocities give rise to cohesion, separation and alignment forces. The weighted sum of these forces enters the Kalman filter as an acceleration, so an occluded fish keeps moving with its group instead of along a straight line, while a fish with no neighbours is predicted exactly as before. We evaluate the approach on two fish datasets, SweetFish \cite{sweetfish} and 3D-ZeF \cite{3dzef}, in which many similar-looking individuals swim close together and frequently occlude one another.
+
+
+Our contributions are as follows:
+\begin{itemize}
+    \item a collective motion model for tracking-by-detection, derived from the boids model;
+    \item integration of the derived model into OC-SORT \cite{ocsort} as a drop-in replacement of the constant-velocity motion model;
+    \item evaluation of the approach on two fish datasets SweetFish \cite{sweetfish} and 3D-ZeF \cite{3dzef}.
+\end{itemize}
+
+% related work: Mainly done in intro
+
+\section*{Methods}
+We follow the \emph{tracking-by-detection} paradigm. At every frame $t$, a detector provides a set of boxes, each with centre $(u, v)$, width $w$, height $h$ and a confidence score. OC-SORT \cite{ocsort} maintains a set of tracks and, at every frame, predicts the state of each track with a motion model, associates the predictions with the new detections and updates the matched tracks with their detections. Unmatched detections start new tracks, and tracks that stay unmatched for too long are deleted. We keep the association of OC-SORT unchanged and modify only its motion model.
+
+\subsection*{Motion model}
+
+\subsubsection*{Constant-velocity Kalman filter (OC-SORT)}
+Like the original SORT \cite{sort}, OC-SORT \cite{ocsort} models each track with a linear Kalman filter \cite{kalman} with state
+\begin{equation}
+  \mathbf{x} = [u, v, s, r, \dot u, \dot v, \dot s]^\top,
+  \label{eq:state}
+\end{equation}
+where $s = wh$ is the box area and $r = w/h$ its aspect ratio, which is assumed constant within the motion model. A detection is observed as $\mathbf{z} = [u, v, s, r]^\top$. The filter alternates between a predict and an update step,
+\begin{equation}
+  \textit{predict}\left\{
+  \begin{aligned}
+    \hat{\mathbf{x}}_{t|t-1} &= \mathbf{F}\hat{\mathbf{x}}_{t-1|t-1} \\
+    \mathbf{P}_{t|t-1} &= \mathbf{F}\mathbf{P}_{t-1|t-1}\mathbf{F}^\top + \mathbf{Q}
+  \end{aligned}\right.
+  \qquad
+  \textit{update}\left\{
+  \begin{aligned}
+    \mathbf{K}_t &= \mathbf{P}_{t|t-1}\mathbf{H}^\top(\mathbf{H}\mathbf{P}_{t|t-1}\mathbf{H}^\top + \mathbf{R})^{-1} \\
+    \hat{\mathbf{x}}_{t|t} &= \hat{\mathbf{x}}_{t|t-1} + \mathbf{K}_t(\mathbf{z}_t - \mathbf{H}\hat{\mathbf{x}}_{t|t-1}) \\
+    \mathbf{P}_{t|t} &= (\mathbf{I} - \mathbf{K}_t\mathbf{H})\mathbf{P}_{t|t-1}
+  \end{aligned}\right.
+  \label{eq:kf}
+\end{equation}
+where the transition matrix $\mathbf{F}$ adds the velocities to $u$, $v$ and $s$ over one frame, $\mathbf{H}$ selects the first four state entries, and $\mathbf{Q}$ and $\mathbf{R}$ are the process and observation noise covariances. The covariance $\mathbf{P}$ expresses the current uncertainty of the state estimate, and the Kalman gain $\mathbf{K}_t$ weighs the prediction against the detection: the more uncertain the prediction is relative to the detection, the closer the update moves the estimate towards the detection. When a track has no matching detection, the update is skipped and the prediction is kept as the estimate, $\hat{\mathbf{x}}_{t|t} = \hat{\mathbf{x}}_{t|t-1}$, $\mathbf{P}_{t|t} = \mathbf{P}_{t|t-1}$. Each track is therefore predicted independently of all others, and an occluded track continues along a straight line regardless of the group it belongs to.
+
+\subsubsection*{Collective motion model (ours; NOTE: perhaps not the final version)}
+We replace this independent prediction with one in which tracks interact, following the boids model \cite{reynolds, reynolds1999}. For track $i$, let $\mathbf{c}_i = (u_i, v_i)^\top$ and $\dot{\mathbf{c}}_i = (\dot u_i, \dot v_i)^\top$ be the centre and velocity of its estimate $\hat{\mathbf{x}}_{t-1|t-1}$, and $\mathbf{d}_i = \dot{\mathbf{c}}_i / \lVert \dot{\mathbf{c}}_i \rVert$ its heading. Track $i$ perceives the other tracks within a radius $r_\mathrm{v}$ and a field of view $\phi$,
+\begin{equation}
+  \mathcal{N}_i = \left\{ j \neq i \;:\; \lVert \mathbf{c}_j - \mathbf{c}_i \rVert \le r_\mathrm{v},\;\;
+  \frac{(\mathbf{c}_j - \mathbf{c}_i) \cdot \mathbf{d}_i}{\lVert \mathbf{c}_j - \mathbf{c}_i \rVert} > \cos\phi \right\}.
+  \label{eq:neighbours}
+\end{equation}
+Let $n_i = |\mathcal{N}_i|$ be the number of neighbours of track $i$. We summarise them by their mean position, their mean velocity and a repulsion vector,
+\begin{equation*}
+  \bar{\mathbf{c}}_i = \frac{1}{n_i}\sum_{j \in \mathcal{N}_i} \mathbf{c}_j, \qquad
+  \bar{\dot{\mathbf{c}}}_i = \frac{1}{n_i}\sum_{j \in \mathcal{N}_i} \dot{\mathbf{c}}_j, \qquad
+  \mathbf{g}_i = \sum_{j \in \mathcal{N}_i} \frac{\mathbf{c}_i - \mathbf{c}_j}{\lVert \mathbf{c}_i - \mathbf{c}_j \rVert^2},
+\end{equation*}
+where each neighbour in $\mathbf{g}_i$ pushes track $i$ away from itself, and closer neighbours push harder. From these we obtain three drives: attraction towards the centre of the neighbours (cohesion), repulsion from nearby neighbours (separation) and alignment with their mean velocity,
+\begin{equation}
+  \mathbf{F}_{A,i} = \frac{\bar{\mathbf{c}}_i - \mathbf{c}_i}{\lVert \bar{\mathbf{c}}_i - \mathbf{c}_i \rVert}, \qquad
+  \mathbf{F}_{R,i} = \frac{\mathbf{g}_i}{\lVert \mathbf{g}_i \rVert}, \qquad
+  \mathbf{F}_{P,i} = \frac{\bar{\dot{\mathbf{c}}}_i - \dot{\mathbf{c}}_i}{\lVert \bar{\dot{\mathbf{c}}}_i - \dot{\mathbf{c}}_i \rVert}.
+  \label{eq:drives}
+\end{equation}
+To avoid division by zero, a vector with zero norm is normalised to the zero vector.
+
+As in the boids model \cite{reynolds1999}, each drive is a steering force that requests an acceleration in its direction. Following the intuition of Newton's second law, $\mathbf{a} = \mathbf{F}/m$, so for an agent of unit mass the force is the acceleration, and the weighted sum of the drives gives the acceleration of the track,
+\begin{equation}
+  \mathbf{a}_i = w_A \mathbf{F}_{A,i} + w_R \mathbf{F}_{R,i} + w_P \mathbf{F}_{P,i},
+  \qquad \mathbf{a}_i = \mathbf{0} \text{ if } \mathcal{N}_i = \emptyset.
+  \label{eq:accel}
+\end{equation}
+Since the drives are unit vectors, each weight is the change in velocity, in pixels per frame (unit of time), that its drive causes in one frame. The acceleration does not move the track directly but changes its velocity, which then moves its position. Over one discrete time step, $\Delta t = 1$ frame, the centre and its velocity then follow the familiar equations of motion,
+\begin{equation*}
+  \dot{\mathbf{c}}_{i,t} = \dot{\mathbf{c}}_{i,t-1} + \mathbf{a}_i\,\Delta t, \qquad
+  \mathbf{c}_{i,t} = \mathbf{c}_{i,t-1} + \dot{\mathbf{c}}_{i,t-1}\,\Delta t + \tfrac{1}{2}\mathbf{a}_i\,\Delta t^2,
+\end{equation*}
+which extends the \textit{predict} step of Equation [\ref{eq:kf}] by:
+\begin{equation}
+  \hat{\mathbf{x}}_{t|t-1} = \mathbf{F}\hat{\mathbf{x}}_{t-1|t-1} + \mathbf{B}\mathbf{a}_i,
+  \qquad
+  \mathbf{B}^\top =
+  \begin{bmatrix}
+    \tfrac{1}{2}\Delta t^2 & 0 & 0 & 0 & \Delta t & 0 & 0 \\
+    0 & \tfrac{1}{2}\Delta t^2 & 0 & 0 & 0 & \Delta t & 0
+  \end{bmatrix},
+  \label{eq:control}
+\end{equation}
+where $\mathbf{F}\hat{\mathbf{x}}_{t-1|t-1}$ is the unchanged constant-velocity prediction and $\mathbf{B}$ adds the displacement and velocity change caused by $\mathbf{a}_i$ to the centre and its velocity, leaving the area and aspect ratio unaffected. Without neighbours, $\mathbf{a}_i = \mathbf{0}$ and Equation [\ref{eq:control}] reduces to the constant-velocity model. As $\mathbf{a}_i$ is treated as a known input, it adds no uncertainty, thus the covariance prediction of $\mathbf{P}_{t|t-1}$ and the \textit{update} step of Equation [\ref{eq:kf}] are unchanged. All accelerations are computed from the estimates at $t-1$ before any track is predicted, so the tracks move synchronously. During occlusion, the repeated small accelerations gradually turn the velocity of the track, so its predicted path bends towards its neighbours instead of continuing in a straight line.
+
+
+\subsection*{Data association (OC-SORT)}
+OC-SORT \cite{ocsort} extends SORT \cite{sort} with three observation-centric components: a re-update that corrects lost tracks once they are found again (ORU), and two association rounds (OCM \& OCR), each solved with the Hungarian matching algorithm \cite{hungarian}.
+
+\subsubsection*{Observation-centric re-update (ORU; NOTE: perhaps not the final version)}
+While a track is lost, its filter only predicts, so when the track is found again its velocity still reflects its motion before the gap. A plain update with the new observation corrects the position but largely keeps this outdated velocity, while re-initialising the track would discard the velocity altogether. Yet it is the velocity at re-detection that determines the predictions that follow. ORU therefore rolls the filter of a track lost after its last observation $\mathbf{z}_{t_1}$ and matched again to $\mathbf{z}_{t_2}$ back to $t_1$, and re-runs it over the gap on the virtual trajectory
+\begin{equation}
+  \tilde{\mathbf{z}}_t = \mathbf{z}_{t_1} + \frac{t - t_1}{t_2 - t_1}(\mathbf{z}_{t_2} - \mathbf{z}_{t_1}), \qquad t_1 < t < t_2,
+  \label{eq:oru}
+\end{equation}
+alternating predict and update steps (Equation [\ref{eq:kf}]) with $\tilde{\mathbf{z}}_t$ in place of the missing observations, so that the track continues from $t_2$ with its average motion over the gap. As in the original work, we use this linear trajectory, which performed best among the alternatives compared there \cite{ocsort}, and run the replay without our control input, as every replayed frame is already anchored by a virtual observation.
+
+\subsubsection*{Observation-centric momentum (OCM)}
+In the first association round, every pair of a predicted track and a detection receives a cost that combines overlap and motion direction,
+\begin{equation}
+  C(\hat{\mathbf{X}}, \mathbf{Z}) = C_\mathrm{IoU}(\hat{\mathbf{X}}, \mathbf{Z}) + \lambda C_v(\mathcal{Z}, \mathbf{Z}),
+  \label{eq:ocm}
+\end{equation}
+where $\hat{\mathbf{X}}$ are the predicted tracks, $\mathbf{Z}$ the new detections and $\mathcal{Z}$ the previous observations of each track. $C_\mathrm{IoU}$ is the negative IoU between predicted and detected boxes. $C_v$ penalises the angle $\Delta\theta = |\theta_\mathrm{track} - \theta_\mathrm{intention}|$ between the direction in which a track has been moving, given by two of its observations $\Delta t$ frames apart, and the direction from its earlier observation to the new detection. The Hungarian algorithm then selects the one-to-one assignment with the lowest total cost, and matches with IoU below a threshold are rejected. 
+
+\subsubsection*{Observation-centric recovery (OCR)}
+Tracks and detections left unmatched enter a second association round, in which the cost is the negative IoU alone, computed against the last observation of each track instead of its prediction. 
+
+Only the first round uses the predicted boxes. Our motion model therefore affects tracking through the IoU term of Equation [\ref{eq:ocm}].
+
+\section*{Experimental setup (NOTE: not conducted yet, metrics and datasets hold)}
+\subsection*{Datasets}
+We evaluate our approach against the OC-SORT \cite{ocsort} baseline on two fish datasets.
+
+SweetFish \cite{sweetfish} contains top-view recordings of a school of 10 juvenile sweetfish in a shallow tank, where the fish move in an approximately two-dimensional plane. Only its training video, with 10{,}000 frames at $2456 \times 2058$ pixels and 30 frames per second, is annotated, with boxes of a fixed size centred on each fish. Here we note that the actual video dimensions and FPS differs from the one described in original paper \cite{sweetfish}.
+
+3D-ZeF \cite{3dzef} contains eight sequences with 1 to 10 zebrafish in an aquarium, each recorded simultaneously by a top and a front camera at $2704 \times 1520$ pixels and 60 frames per second. 
+
+
+\subsection*{Evaluation metrics}
+We evaluate all experiments with TrackEval \cite{trackeval} and report the standard MOT metrics \cite{mot_metrics}. As our motion model only changes the predictions used for association, we focus on HOTA \cite{hota}, which combines the detection accuracy (DetA) and the association accuracy (AssA) by their geometric mean, together with the association measures AssA, IDF1 \cite{idf1}, the F1 score of detections assigned to the correct identity, and the number of identity switches (IDSW). For completeness, we also report DetA and MOTA \cite{clear}, which combines false negatives, false positives and identity switches.
+
+\subsection*{Detector}
+NOTE: This section will be added at a later milestone.
+
+\section*{Results} 
+% table with results
+% image showing the constant velocity prediction vs collective motion prediction through 10+ frames
+NOTE: This section will be added at a later milestone.
+
+\section*{Discussion}
+NOTE: This section will be added at a later milestone.
+
+
+\section*{Conclusion}
+NOTE: This section will be added at a later milestone.
+
+% Bibliography (replace with your own .bib file and add \cite{...} commands in the text)
+\bibliography{pnas-sample}
+
+\end{document}
