@@ -38,6 +38,7 @@ python scripts/run_tracking.py configs/experiments/ocsort_sweetfish_oracle.yaml 
 #### 1st milestone
 - data preparation
 - baseline implementation and evaluation
+- report available [here](Report.pdf)
 
 #### 2nd milestone
 - implementation and evaluation of different collective motion models
