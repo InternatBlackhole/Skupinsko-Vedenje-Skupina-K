@@ -1,0 +1,27 @@
+# YOLO11-s fish detector for SweetFish, fine-tuned from COCO weights.
+# Trained on the first 4500 frames, validated (checkpoint selection) on frames
+# 4501-5000; the tracking split val_half (5001-10000) is never seen.
+name: yolo11s_sweetfish
+framework: ultralytics
+model: yolo11s.pt            # downloaded to weights/pretrained/ on first use
+dataset: sweetfish
+data:
+  train_split: det_train
+  val_split: det_val
+  frame_stride: 5            # 30 FPS video: neighbouring frames are near-duplicates
+  class_name: fish
+train:                       # passed straight to ultralytics YOLO.train()
+  epochs: 60
+  imgsz: 1280                # 2456x2058 frames; fish (~100 px) stay ~50 px
+  batch: 8
+  workers: 8
+  patience: 20
+  seed: 0
+  deterministic: true
+  plots: true
+inference:                   # used by export_detections.py
+  imgsz: 1280
+  conf: 0.05                 # keep low-score boxes; the tracker applies its own thresholds
+  iou: 0.7                   # NMS IoU
+  quantize: 16               # FP16 inference
+  batch: 8

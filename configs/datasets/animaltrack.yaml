@@ -1,0 +1,12 @@
+name: animaltrack
+reader: animaltrack
+root: AnimalTrack        # relative to CMOT_DATA_ROOT (default ~/Desktop/Data)
+# Splits default to train_test_splits/gt_{train,test}.txt; list sequences here to override.
+splits:
+  train: null
+  test: null
+evaluation:
+  do_preproc: false
+output_filter:
+  min_box_area: 0
+  max_aspect_ratio: null

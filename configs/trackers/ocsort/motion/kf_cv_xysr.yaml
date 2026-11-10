@@ -1,0 +1,10 @@
+# Paper default: constant-velocity Kalman filter on [cx, cy, area, aspect].
+# Noise matrices start at identity and are scaled exactly as in the official code.
+name: kf_cv_xysr
+r_scale_sr: 10.0          # R[2:, 2:] *= ...   (area / aspect measurement noise)
+p_scale_velocity: 1000.0  # P[4:, 4:] *= ...   (unknown initial velocities)
+p_scale: 10.0             # P *= ...
+q_scale_vs: 0.01          # Q[-1, -1] *= ...   (area velocity process noise)
+q_scale_velocity: 0.01    # Q[4:, 4:] *= ...
+interaction:
+  name: none              # scene-level controls (collective motion); none = original OC-SORT

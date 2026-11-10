@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cmot"
+version = "0.1.0"
+description = "Collective motion models for multi-object tracking (OC-SORT baseline and variants)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "pyyaml>=6.0",
+    "lap>=0.5",
+]
+
+[project.optional-dependencies]
+eval = [
+    # TrackEval is not published on PyPI; pinned to a fixed commit for reproducibility.
+    "trackeval @ git+https://github.com/JonathonLuiten/TrackEval.git@12c8791b303e0a0b50f753af204249e622d0281a",
+]
+detect = [
+    # PyTorch for RTX 50xx (Blackwell) needs CUDA 12.8 wheels:
+    #   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+    "torch>=2.7",
+    "torchvision",
+    "ultralytics>=8.4",
+    "opencv-python",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,15 @@
+name: zef3d
+reader: zef3d
+root: 3D-ZeF             # relative to CMOT_DATA_ROOT (default ~/Desktop/Data)
+# Official splits from the dataset card; each sequence is tracked per view
+# (-T top camera, -F front camera). Test fish are a different, younger cohort.
+splits:
+  train: [ZebraFish-01-T, ZebraFish-01-F, ZebraFish-02-T, ZebraFish-02-F]
+  val: [ZebraFish-03-T, ZebraFish-03-F, ZebraFish-04-T, ZebraFish-04-F]
+  test: [ZebraFish-05-T, ZebraFish-05-F, ZebraFish-06-T, ZebraFish-06-F,
+         ZebraFish-07-T, ZebraFish-07-F, ZebraFish-08-T, ZebraFish-08-F]
+evaluation:
+  do_preproc: false
+output_filter:
+  min_box_area: 0
+  max_aspect_ratio: null

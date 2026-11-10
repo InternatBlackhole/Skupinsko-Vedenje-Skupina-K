@@ -1,0 +1,19 @@
+# OC-SORT on 3D-ZeF (both 2D views) with corrupted ground-truth boxes as detections.
+dataset: zef3d
+split: val
+detections:
+  source: gt_oracle
+  position_noise: 0.05
+  size_noise: 0.05
+  drop_rate: 0.1
+  score: 0.9
+  seed: 0
+tracker:
+  name: ocsort
+  config: default
+  motion: kf_cv_xysr
+  overrides: {}
+runner:
+  skip_empty_frames: false
+  interpolation: null
+evaluate: true

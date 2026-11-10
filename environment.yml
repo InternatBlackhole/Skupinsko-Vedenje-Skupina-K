@@ -1,0 +1,19 @@
+name: mot
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - pyyaml
+  - pip
+  - pip:
+      # CUDA 12.8 PyTorch wheels (required for RTX 50xx GPUs)
+      - --extra-index-url https://download.pytorch.org/whl/cu128
+      - torch
+      - torchvision
+      - ultralytics
+      - lap
+      - "trackeval @ git+https://github.com/JonathonLuiten/TrackEval.git@12c8791b303e0a0b50f753af204249e622d0281a"
+      - -e .
