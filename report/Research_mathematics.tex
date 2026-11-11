@@ -50,7 +50,7 @@ NOTE: This section will be added at a later milestone.
 \emph{Multiple-object tracking (MOT)} aims to localise all objects of interest in a video and link them over time into trajectories with consistent identities \cite{mot_survey}. 
 The dominant approach is \emph{tracking-by-detection}, where a detector finds objects in each frame and these detections are then associated across frames \cite{mot_survey,motchallenge}.
 Such trackers can operate \emph{offline}, using the whole video at once \cite{neuralsolver}, or \emph{online}, using only past and current frames \cite{sort,deepsort,bytetrack,ocsort}.
-A different line of work tracks objects through segmentation, most notably with the Segment Anything Model (SAM) family \cite{sam2,sam3}, propagating object masks through the video instead of matching boxes \cite{dam4sam,ugo}.
+A different line of work tracks objects through segmentation, most notably with the Segment Anything Model (SAM) family \cite{sam2,sam3}, propagating object masks through the video instead of matching boxes \cite{ugo}.
 
 % our baseline method ocsort and its counterparts (sort approaches)
 Many online trackers build on \emph{Simple Online and Realtime Tracking (SORT)} \cite{sort}, which predicts each object's next bounding box with a Kalman filter \cite{kalman} and matches these predictions to new detections by their overlap (IoU).
